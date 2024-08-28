@@ -1,0 +1,45 @@
+name: Build OLLVM
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake ninja-build clang
+
+    - name: Configure build
+      run: |
+        mkdir -p build
+        cd build
+        cmake -G Ninja -DLLVM_ENABLE_PROJECTS="clang;lld" -DCMAKE_BUILD_TYPE=Release ../llvm
+
+    - name: Build OLLVM
+      run: |
+        cd build
+        ninja | tee build-output.txt
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: ollvm-build
+        path: build/bin/*
+
+    - name: Install OLLVM
+      run: |
+        cd build
+        sudo ninja install
